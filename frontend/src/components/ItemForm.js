@@ -4,12 +4,10 @@ import api from '../utils/api';
 const ItemForm = () => {
     const [item_name, setName] = useState('');
     const [category, setCategory] = useState('');
-    const [spec, setSpec] = useState('');
-    const [specvalue, setSpecvalue] = useState('');
-    const [unit, setUnit] = useState('');
+    const [saleRate, setSaleRate] = useState(0);
     const [quantity, setQuantity] = useState(0);
     const [rentalRate, setRentalRate] = useState(0);
-    const [available, setAvailable] = useState(true);
+    const [description, setDescription] = useState('');
     const [categories, setCategories] = useState([]);
 
     useEffect(() => {
@@ -32,12 +30,10 @@ const ItemForm = () => {
             const newItem = {
                 item_name,
                 category,
-                spec,
-                specvalue,
-                unit,
+                description,
                 quantity,
+                saleRate,
                 rentalRate,
-                available,
             };
 
             await api.post('/items', newItem); // API endpoint to create a new item
@@ -45,12 +41,10 @@ const ItemForm = () => {
             // Reset the form fields
             setName('');
             setCategory('');
-            setSpec('');
-            setSpecvalue('');
-            setUnit('');
+            setDescription('');
+            setSaleRate(0);
             setQuantity(0);
             setRentalRate(0);
-            setAvailable(true);
         } catch (error) {
             console.error("Error creating item:", error);
             alert('Error creating item');
@@ -79,16 +73,8 @@ const ItemForm = () => {
                             </select>
                         </div>
                         <div className="form-group mb-3">
-                            <label>Specification</label>
-                            <input type="text" className="form-control" value={spec} onChange={(e) => setSpec(e.target.value)} required />
-                        </div>
-                        <div className="form-group mb-3">
-                            <label>Specification Value</label>
-                            <input type="text" className="form-control" value={specvalue} onChange={(e) => setSpecvalue(e.target.value)} required />
-                        </div>
-                        <div className="form-group mb-3">
-                            <label>Unit</label>
-                            <input type="text" className="form-control" value={unit} onChange={(e) => setUnit(e.target.value)} required />
+                            <label>Description</label>
+                            <input multiple type="text" className="form-control" value={description} onChange={(e) => setDescription(e.target.value)} required />
                         </div>
                         <div className="form-group mb-3">
                             <label>Quantity</label>
@@ -99,11 +85,8 @@ const ItemForm = () => {
                             <input type="number" className="form-control" value={rentalRate} onChange={(e) => setRentalRate(Number(e.target.value))} required />
                         </div>
                         <div className="form-group mb-3">
-                            <label>Available</label>
-                            <select className="form-control" value={available} onChange={(e) => setAvailable(e.target.value === 'true')} required>
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
+                            <label>Sale Rate</label>
+                            <input type="number" className="form-control" value={saleRate} onChange={(e) => setSaleRate(Number(e.target.value))} required />
                         </div>
                         <button type="submit" className="btn btn-primary">Create Item</button>
                     </form>

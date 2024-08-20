@@ -3,13 +3,15 @@ import api from '../utils/api';
 import { RentalContext } from '../context/RentalContext';
 
 const RentalForm = () => {
+    const [orderType, setOrderType] = useState('rent'); // Default order type is 'rent'
     const [rentalDate, setRentalDate] = useState('');
     const [returnDate, setReturnDate] = useState('');
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [items, setItems] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
-    const [totalAmount, setTotalAmount] = useState(0); // Initialize totalAmount to 0
+    const [totalRentAmount, setTotalRentAmount] = useState(0);
+    const [totalSaleAmount, setTotalSaleAmount] = useState(0);
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -46,34 +48,49 @@ const RentalForm = () => {
         }
     }, [selectedCategory]);
 
+
     const handleItemChange = (itemId) => {
-        console.log('Item ID:', itemId); // Log the item ID
         setSelectedItems(prevSelectedItems => {
-            let updatedItems;
             if (prevSelectedItems.includes(itemId)) {
-                console.log('Removing item:', itemId); // Log removing item
-                updatedItems = prevSelectedItems.filter(id => id !== itemId);
+                return prevSelectedItems.filter(id => id !== itemId);
             } else {
-                console.log('Adding item:', itemId); // Log adding item
-                updatedItems = [...prevSelectedItems, itemId];
+                return [...prevSelectedItems, itemId];
             }
-
-            // Calculate the total amount based on selected items' rental rates
-            const newTotalAmount = updatedItems.reduce((sum, id) => {
-                const selectedItem = items.find(item => item._id === id);
-                return sum + (selectedItem ? selectedItem.rentalRate : 0);
-            }, 0);
-
-            setTotalAmount(newTotalAmount); // Update totalAmount state
-            return updatedItems;
         });
     };
+
+
+    // const handleItemChange = (itemId) => {
+    //     setSelectedItems(prevSelectedItems => {
+    //         let updatedItems;
+    //         if (prevSelectedItems.includes(itemId)) {
+    //             updatedItems = prevSelectedItems.filter(id => id !== itemId);
+    //         } else {
+    //             updatedItems = [...prevSelectedItems, itemId];
+    //         }
+
+    //         // Calculate the total amounts based on selected items' rates
+    //         const newTotalRentAmount = updatedItems.reduce((sum, id) => {
+    //             const selectedItem = items.find(item => item._id === id);
+    //             return sum + (selectedItem ? selectedItem.rentalRate : 0);
+    //         }, 0);
+
+    //         const newTotalSaleAmount = updatedItems.reduce((sum, id) => {
+    //             const selectedItem = items.find(item => item._id === id);
+    //             return sum + (selectedItem ? selectedItem.saleRate : 0);
+    //         }, 0);
+
+    //         setTotalRentAmount(newTotalRentAmount);
+    //         setTotalSaleAmount(newTotalSaleAmount);
+
+    //         return updatedItems;
+    //     });
+    // };
 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Log the rental object to inspect it before sending the request
         const rental = {
             name,
             phone,
@@ -84,22 +101,20 @@ const RentalForm = () => {
                     return {
                         item_name: item.item_name,
                         quantity: item.quantity,
-                        spec: item.spec,
-                        specvalue: item.specvalue,
-                        unit: item.unit,
-                        rentalRate: item.rentalRate
+                        description: item.description,
+                        rentalRate: item.rentalRate,
+                        saleRate: item.saleRate,
                     };
                 } else {
                     console.error(`Item with ID ${itemId} not found in items array`);
                     return null;
                 }
-            }).filter(item => item !== null),  // Filter out any null items
-            rentalDate,
-            returnDate,
-            totalAmount
+            }).filter(item => item !== null),
+            rentalDate: orderType !== 'sale' ? rentalDate : null,
+            returnDate: orderType !== 'sale' ? returnDate : null,
+            totalAmount: orderType === 'rent' ? totalRentAmount : totalSaleAmount, // totalAmount based on order type
+            orderType
         };
-
-        console.log("Rental Object:", rental); // Log the rental object
 
         try {
             await createRental(rental);
@@ -113,11 +128,12 @@ const RentalForm = () => {
             setReturnDate('');
             setSelectedCategory('');
             setSelectedItems([]);
-            setTotalAmount(0); // Reset totalAmount to 0
+            setTotalRentAmount(0);
+            setTotalSaleAmount(0);
         } catch (error) {
             console.error("Error creating rental:", error);
             if (error.response && error.response.data) {
-                console.error("Server Response:", error.response.data); // Log the server response
+                console.error("Server Response:", error.response.data);
             }
             alert('Error creating rental');
         }
@@ -126,6 +142,7 @@ const RentalForm = () => {
 
     // const handleSubmit = async (e) => {
     //     e.preventDefault();
+
     //     const rental = {
     //         name,
     //         phone,
@@ -136,20 +153,24 @@ const RentalForm = () => {
     //                 return {
     //                     item_name: item.item_name,
     //                     quantity: item.quantity,
-    //                     spec: item.spec,
-    //                     specvalue: item.specvalue,
-    //                     unit: item.unit,
-    //                     rentalRate: item.rentalRate
+    //                     description: item.description,
+    //                     rentalRate: item.rentalRate,
+    //                     saleRate: item.saleRate,
     //                 };
     //             } else {
     //                 console.error(`Item with ID ${itemId} not found in items array`);
     //                 return null;
     //             }
-    //         }).filter(item => item !== null),  // Filter out any null items
-    //         rentalDate,
-    //         returnDate,
-    //         totalAmount
+    //         }).filter(item => item !== null),
+    //         rentalDate: orderType !== 'sale' ? rentalDate : null,
+    //         returnDate: orderType !== 'sale' ? returnDate : null,
+    //         totalRentAmount: orderType !== 'sale' ? totalRentAmount : 0,
+    //         totalSaleAmount: orderType !== 'rent' ? totalSaleAmount : 0,
+    //         orderType
     //     };
+
+    //     console.log("Rental Object:", rental);
+
     //     try {
     //         await createRental(rental);
     //         alert('Rental created successfully');
@@ -162,9 +183,13 @@ const RentalForm = () => {
     //         setReturnDate('');
     //         setSelectedCategory('');
     //         setSelectedItems([]);
-    //         setTotalAmount(0); // Reset totalAmount to 0
+    //         setTotalRentAmount(0);
+    //         setTotalSaleAmount(0);
     //     } catch (error) {
     //         console.error("Error creating rental:", error);
+    //         if (error.response && error.response.data) {
+    //             console.error("Server Response:", error.response.data);
+    //         }
     //         alert('Error creating rental');
     //     }
     // };
@@ -194,14 +219,34 @@ const RentalForm = () => {
                             <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} />
                         </div>
                         <div className="form-group mb-3">
-                            <label>Rental Date</label>
-                            <input type="date" className="form-control" value={rentalDate} onChange={(e) => setRentalDate(e.target.value)} required />
+                            <label>Order Type</label>
+                            <div className="form-check">
+                                <input className="form-check-input" type="radio" name="orderType" id="rent" value="rent" checked={orderType === 'rent'} onChange={(e) => setOrderType(e.target.value)} />
+                                <label className="form-check-label" htmlFor="rent">Rent only</label>
+                            </div>
+                            <div className="form-check">
+                                <input className="form-check-input" type="radio" name="orderType" id="sale" value="sale" checked={orderType === 'sale'} onChange={(e) => setOrderType(e.target.value)} />
+                                <label className="form-check-label" htmlFor="sale">Sale only</label>
+                            </div>
+                            <div className="form-check">
+                                <input className="form-check-input" type="radio" name="orderType" id="rentAndSale" value="rentAndSale" checked={orderType === 'rentAndSale'} onChange={(e) => setOrderType(e.target.value)} />
+                                <label className="form-check-label" htmlFor="rentAndSale">Rent and Sale</label>
+                            </div>
                         </div>
+                        {orderType !== 'sale' && (
+                            <>
+                                <div className="form-group mb-3">
+                                    <label>Rental Date</label>
+                                    <input type="date" className="form-control" value={rentalDate} onChange={(e) => setRentalDate(e.target.value)} required />
+                                </div>
+                                <div className="form-group mb-3">
+                                    <label>Return Date</label>
+                                    <input type="date" className="form-control" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} required />
+                                </div>
+                            </>
+                        )}
                         <div className="form-group mb-3">
-                            <label>Return Date</label>
-                            <input type="date" className="form-control" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} required />
-                        </div>
-                        <div className="form-group mb-3">
+                            <label>Select Category</label>
                             <select className="form-control mb-3" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} required>
                                 <option value="" disabled>Select Category</option>
                                 {categories.map(category => (
@@ -217,34 +262,28 @@ const RentalForm = () => {
                                 </button>
                                 <ul className="dropdown-menu w-100" aria-labelledby="dropdownMenuButton" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                                     {Array.isArray(items) && items.map(item => (
-                                        <li key={item._id} className="dropdown-item">
-                                            <div className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    value={item._id}
-                                                    id={`item-${item._id}`}
-                                                    onChange={() => handleItemChange(item._id)}
-                                                />
-                                                <label className="form-check-label" htmlFor={`item-${item._id}`}>
-                                                    {item.item_name} ({item.spec} - {item.specvalue} {item.unit})
-                                                </label>
-                                            </div>
+                                        <li key={item._id}>
+                                            <button type="button" className={`dropdown-item ${selectedItems.includes(item._id) ? 'active' : ''}`} onClick={() => handleItemChange(item._id)}>
+                                                {item.item_name} - {item.description} | Rent: ${item.rentalRate}/day | Sale: ${item.saleRate}
+                                            </button>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                         </div>
-                        <div className="form-group mb-3">
-                            <label>Total Rent Amount</label>
-                            <input
-                                className="form-control"
-                                type="number"
-                                value={totalAmount}
-                                readOnly
-                            />
-                        </div>
-                        <button className="btn btn-primary" type="submit">Create Rental</button>
+                        {orderType !== 'sale' && (
+                            <div className="form-group mb-3">
+                                <label>Total Rent Amount:</label>
+                                <input type="text" className="form-control" value={totalRentAmount} readOnly />
+                            </div>
+                        )}
+                        {orderType !== 'rent' && (
+                            <div className="form-group mb-3">
+                                <label>Total Sale Amount:</label>
+                                <input type="text" className="form-control" value={totalSaleAmount} readOnly />
+                            </div>
+                        )}
+                        <button type="submit" className="btn btn-primary">Submit</button>
                     </form>
                 </div>
             </div>

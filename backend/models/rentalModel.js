@@ -24,15 +24,12 @@ const RentalSchema = new mongoose.Schema({
             type: Number,
             required: true,
         },
-        spec: {
+        description: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Item',
+            required: true,
         },
-        specvalue: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Item',
-        },
-        unit: {
+        saleRate: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Item',
         },
