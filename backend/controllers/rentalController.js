@@ -3,19 +3,29 @@ const Item = require('../models/itemModel');
 
 exports.createRental = async (req, res) => {
     try {
-        const { name, phone, address, items, totalAmount, rentalDate, returnDate } = req.body;
+        const { name, phone, address, items, returnDate } = req.body;
 
-        const rentalItems = await Item.find({ _id: { $in: items.map(item => item.item_name) } });
-        if (rentalItems.length !== items.length) return res.status(404).json({ error: 'Some items not found' });
+        const itemIds = items.map(item => item._id);
+        const rentalItems = await Item.find({ _id: { $in: itemIds } });
+
+        if (rentalItems.length !== items.length) {
+            return res.status(404).json({ error: 'Some items not found' });
+        }
 
         const rental = new Rental({
             name,
             phone,
             address,
             items,
-            rentalDate,
             returnDate,
-            totalAmount,
+            totalRentAmount: items.reduce((total, item) => {
+                const foundItem = rentalItems.find(i => i._id.toString() === item._id.toString());
+                return total + ((foundItem?.rentalRate || 0) * item.quantity);
+            }, 0),
+            totalSaleAmount: items.reduce((total, item) => {
+                const foundItem = rentalItems.find(i => i._id.toString() === item._id.toString());
+                return total + ((foundItem?.saleRate || 0) * item.quantity);
+            }, 0)
         });
 
         await rental.save();
@@ -27,7 +37,10 @@ exports.createRental = async (req, res) => {
 
 exports.getRentals = async (req, res) => {
     try {
-        const rentals = await Rental.find({}).populate('items.item_name');
+        const rentals = await Rental.find({}).populate({
+            path: 'items._id',
+            select: 'item_name rentalRate saleRate'
+        });
         res.status(200).json(rentals);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -36,7 +49,10 @@ exports.getRentals = async (req, res) => {
 
 exports.getRental = async (req, res) => {
     try {
-        const rental = await Rental.findById(req.params.id).populate('items.item_name');
+        const rental = await Rental.findById(req.params.id).populate({
+            path: 'items._id',
+            select: 'item_name rentalRate saleRate'
+        });
         if (!rental) return res.status(404).json({ error: 'Rental not found' });
         res.json(rental);
     } catch (error) {
@@ -46,7 +62,14 @@ exports.getRental = async (req, res) => {
 
 exports.updateRental = async (req, res) => {
     try {
-        const rental = await Rental.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('items.item_name');
+        const rental = await Rental.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        ).populate({
+            path: 'items._id',
+            select: 'item_name rentalRate saleRate'
+        });
         if (!rental) return res.status(404).json({ error: 'Rental not found' });
         res.json(rental);
     } catch (error) {

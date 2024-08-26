@@ -1,7 +1,6 @@
 import React from 'react';
 import RentalForm from '../components/RentalForm';
 import ItemForm from '../components/ItemForm';
-import BillForm from '../components/BillForm';
 // import CustomerList from '../components/CustomerList';
 // import RentalList from '../components/RentalList';
 // import ItemList from '../components/ItemList';
@@ -32,14 +31,7 @@ const HomePage = () => {
                     <ItemList />
                 </div> */}
             </div>
-            <div className="row mt-4">
-                <div className="col-md-6">
-                    <BillForm />
-                </div>
-                {/* <div className="col-md-6">
-                    <BillList />
-                </div> */}
-            </div>
+
         </div>
     );
 };

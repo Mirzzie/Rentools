@@ -1,289 +1,515 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { RentalContext } from '../context/RentalContext';
 
 const RentalForm = () => {
-    const [orderType, setOrderType] = useState('rent'); // Default order type is 'rent'
-    const [rentalDate, setRentalDate] = useState('');
-    const [returnDate, setReturnDate] = useState('');
     const [categories, setCategories] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState('');
     const [items, setItems] = useState([]);
+    const [filteredItems, setFilteredItems] = useState({});
     const [selectedItems, setSelectedItems] = useState([]);
-    const [totalRentAmount, setTotalRentAmount] = useState(0);
-    const [totalSaleAmount, setTotalSaleAmount] = useState(0);
+    const [orderType, setOrderType] = useState('rent');
+    const [searchTerms, setSearchTerms] = useState({});
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
-    const { createRental } = useContext(RentalContext);
+    const [returnDate, setReturnDate] = useState('');
+    const [returnTime, setReturnTime] = useState('');
+    const [totalRentAmount, setTotalRentAmount] = useState(0);
+    const [totalSaleAmount, setTotalSaleAmount] = useState(0);
 
     useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await api.get('/categories');
-                setCategories(response.data);
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-                alert('Error fetching categories');
-            }
-        };
+        // Fetch categories and items from your API
+        api.get('/categories')
+            .then(response => setCategories(response.data))
+            .catch(error => console.error('Error fetching categories:', error));
 
-        fetchCategories();
+        api.get('/items')
+            .then(response => setItems(response.data))
+            .catch(error => console.error('Error fetching items:', error));
     }, []);
 
     useEffect(() => {
-        if (selectedCategory) {
-            const fetchItems = async () => {
-                try {
-                    const response = await api.get(`/items/category/${selectedCategory}`);
-                    setItems(response.data);
-                } catch (error) {
-                    console.error("Error fetching items:", error);
-                    alert('Error fetching items');
-                }
-            };
-
-            fetchItems();
-        }
-    }, [selectedCategory]);
-
-
-    const handleItemChange = (itemId) => {
-        setSelectedItems(prevSelectedItems => {
-            if (prevSelectedItems.includes(itemId)) {
-                return prevSelectedItems.filter(id => id !== itemId);
-            } else {
-                return [...prevSelectedItems, itemId];
-            }
+        const filtered = {};
+        categories.forEach(cat => {
+            filtered[cat._id] = items.filter(item =>
+                item.category._id === cat._id &&
+                (!searchTerms[cat._id] || item.item_name.toLowerCase().includes(searchTerms[cat._id].toLowerCase()))
+            );
         });
+        setFilteredItems(filtered);
+    }, [categories, items, searchTerms]);
+
+    const handleItemSelection = (itemId, checked, type) => {
+        const item = items.find(i => i._id === itemId);
+
+        if (checked) {
+            setSelectedItems(prevItems => [...prevItems, { ...item, quantity: 1, type }]);
+        } else {
+            setSelectedItems(prevItems => prevItems.filter(i => i._id !== itemId || i.type !== type));
+        }
     };
 
+    const handleReturnDateChange = (e) => {
+        const newReturnDate = e.target.value;
+        const rentalDateTime = new Date();
+        const newReturnDateTime = new Date(`${newReturnDate}T${returnTime}`);
 
-    // const handleItemChange = (itemId) => {
-    //     setSelectedItems(prevSelectedItems => {
-    //         let updatedItems;
-    //         if (prevSelectedItems.includes(itemId)) {
-    //             updatedItems = prevSelectedItems.filter(id => id !== itemId);
-    //         } else {
-    //             updatedItems = [...prevSelectedItems, itemId];
-    //         }
+        if (newReturnDate < rentalDateTime.toISOString().split('T')[0] || (newReturnDate === rentalDateTime.toISOString().split('T')[0] && newReturnDateTime < rentalDateTime)) {
+            alert('Return date and time must be after rental date and time.');
+        } else {
+            setReturnDate(newReturnDate);
+        }
+    };
 
-    //         // Calculate the total amounts based on selected items' rates
-    //         const newTotalRentAmount = updatedItems.reduce((sum, id) => {
-    //             const selectedItem = items.find(item => item._id === id);
-    //             return sum + (selectedItem ? selectedItem.rentalRate : 0);
-    //         }, 0);
+    const handleReturnTimeChange = (e) => {
+        const newReturnTime = e.target.value;
+        const rentalDateTime = new Date();
+        const newReturnDateTime = new Date(`${returnDate}T${newReturnTime}`);
 
-    //         const newTotalSaleAmount = updatedItems.reduce((sum, id) => {
-    //             const selectedItem = items.find(item => item._id === id);
-    //             return sum + (selectedItem ? selectedItem.saleRate : 0);
-    //         }, 0);
+        if (returnDate && newReturnDateTime < rentalDateTime) {
+            alert('Return date and time must be after rental date and time.');
+        } else {
+            setReturnTime(newReturnTime);
+        }
+    };
 
-    //         setTotalRentAmount(newTotalRentAmount);
-    //         setTotalSaleAmount(newTotalSaleAmount);
+    const handleQuantityChange = (itemId, quantity, type) => {
+        setSelectedItems(prevItems =>
+            prevItems.map(i => (i._id === itemId && i.type === type ? { ...i, quantity: Number(quantity) } : i))
+        );
+    };
 
-    //         return updatedItems;
-    //     });
-    // };
+    useEffect(() => {
+        const rentTotal = selectedItems.filter(i => i.type === 'rent').reduce((sum, item) =>
+            sum + (item.rentalRate * item.quantity), 0);
+        const saleTotal = selectedItems.filter(i => i.type === 'sale').reduce((sum, item) =>
+            sum + (item.saleRate * item.quantity), 0);
 
+        setTotalRentAmount(rentTotal);
+        setTotalSaleAmount(saleTotal);
+    }, [selectedItems]);
 
-    const handleSubmit = async (e) => {
+    const validateTimes = (rentalDate) => {
+        if (rentalDate && returnDate) {
+            const rentalDateTime = new Date(rentalDate);
+            const returnDateTime = new Date(`${returnDate}T${returnTime}`);
+
+            if (rentalDateTime > returnDateTime) {
+                alert('Return date and time must be after rental date and time.');
+                return false;
+            }
+        }
+        return true;
+    };
+
+    const handleSubmit = (e) => {
         e.preventDefault();
 
-        const rental = {
+        if (!validateTimes()) return;
+
+        const rentalData = {
             name,
             phone,
             address,
-            items: selectedItems.map(itemId => {
-                const item = items.find(item => item._id === itemId);
-                if (item) {
-                    return {
-                        item_name: item.item_name,
-                        quantity: item.quantity,
-                        description: item.description,
-                        rentalRate: item.rentalRate,
-                        saleRate: item.saleRate,
-                    };
-                } else {
-                    console.error(`Item with ID ${itemId} not found in items array`);
-                    return null;
-                }
-            }).filter(item => item !== null),
-            rentalDate: orderType !== 'sale' ? rentalDate : null,
-            returnDate: orderType !== 'sale' ? returnDate : null,
-            totalAmount: orderType === 'rent' ? totalRentAmount : totalSaleAmount, // totalAmount based on order type
-            orderType
+            items: selectedItems.map(item => ({
+                _id: item._id,
+                quantity: item.quantity,
+                type: item.type
+            })),
+            returnDate,
+            returnTime,
+            totalRentAmount,
+            totalSaleAmount
         };
 
-        try {
-            await createRental(rental);
-            alert('Rental created successfully');
-            // Reset form fields
-            setName('');
-            setPhone('');
-            setEmail('');
-            setAddress('');
-            setRentalDate('');
-            setReturnDate('');
-            setSelectedCategory('');
-            setSelectedItems([]);
-            setTotalRentAmount(0);
-            setTotalSaleAmount(0);
-        } catch (error) {
-            console.error("Error creating rental:", error);
-            if (error.response && error.response.data) {
-                console.error("Server Response:", error.response.data);
-            }
-            alert('Error creating rental');
-        }
+        api.post('/rentals', rentalData)
+            .then(response => {
+                alert('Rental record created successfully!');
+                // Reset the form
+                setName('');
+                setPhone('');
+                setAddress('');
+                setSelectedItems([]); // Deselect all items
+                setSearchTerms({}); // Reset search terms
+                setReturnDate('');
+                setReturnTime('');
+                setTotalRentAmount(0);
+                setTotalSaleAmount(0);
+                setOrderType('rent');
+            })
+            .catch(error => console.error('Error creating rental record:', error));
     };
-
-
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-
-    //     const rental = {
-    //         name,
-    //         phone,
-    //         address,
-    //         items: selectedItems.map(itemId => {
-    //             const item = items.find(item => item._id === itemId);
-    //             if (item) {
-    //                 return {
-    //                     item_name: item.item_name,
-    //                     quantity: item.quantity,
-    //                     description: item.description,
-    //                     rentalRate: item.rentalRate,
-    //                     saleRate: item.saleRate,
-    //                 };
-    //             } else {
-    //                 console.error(`Item with ID ${itemId} not found in items array`);
-    //                 return null;
-    //             }
-    //         }).filter(item => item !== null),
-    //         rentalDate: orderType !== 'sale' ? rentalDate : null,
-    //         returnDate: orderType !== 'sale' ? returnDate : null,
-    //         totalRentAmount: orderType !== 'sale' ? totalRentAmount : 0,
-    //         totalSaleAmount: orderType !== 'rent' ? totalSaleAmount : 0,
-    //         orderType
-    //     };
-
-    //     console.log("Rental Object:", rental);
-
-    //     try {
-    //         await createRental(rental);
-    //         alert('Rental created successfully');
-    //         // Reset form fields
-    //         setName('');
-    //         setPhone('');
-    //         setEmail('');
-    //         setAddress('');
-    //         setRentalDate('');
-    //         setReturnDate('');
-    //         setSelectedCategory('');
-    //         setSelectedItems([]);
-    //         setTotalRentAmount(0);
-    //         setTotalSaleAmount(0);
-    //     } catch (error) {
-    //         console.error("Error creating rental:", error);
-    //         if (error.response && error.response.data) {
-    //             console.error("Server Response:", error.response.data);
-    //         }
-    //         alert('Error creating rental');
-    //     }
-    // };
 
     return (
         <div className="container mt-4">
-            <div className="card">
-                <div className="card-header">
-                    Rental
-                </div>
+            <h2>Create Rental</h2>
+            <div className="card mb-4">
                 <div className="card-body">
-                    <form className="form-group mb-3" onSubmit={handleSubmit}>
-                        <div className="form-group mb-3">
-                            <label>Name</label>
-                            <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3">
+                            <label htmlFor="orderType" className="form-label">Order Type</label>
+                            <select
+                                className="form-select"
+                                id="orderType"
+                                value={orderType}
+                                onChange={(e) => setOrderType(e.target.value)}
+                                required
+                            >
+                                <option value="rent">Rent only</option>
+                                <option value="sale">Sale only</option>
+                                <option value="both">Both</option>
+                            </select>
                         </div>
-                        <div className="form-group mb-3">
-                            <label>Phone</label>
-                            <input type="text" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+
+                        <div className="mb-3">
+                            <label htmlFor="name" className="form-label">Customer Name</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                id="name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
                         </div>
-                        <div className="form-group mb-3">
-                            <label>Email</label>
-                            <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <div className="mb-3">
+                            <label htmlFor="phone" className="form-label">Phone Number</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                id="phone"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                required
+                            />
                         </div>
-                        <div className="form-group mb-3">
-                            <label>Address</label>
-                            <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} />
+                        <div className="mb-3">
+                            <label htmlFor="address" className="form-label">Address</label>
+                            <textarea
+                                className="form-control"
+                                type="text"
+                                id="address"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                required
+                            ></textarea>
                         </div>
-                        <div className="form-group mb-3">
-                            <label>Order Type</label>
-                            <div className="form-check">
-                                <input className="form-check-input" type="radio" name="orderType" id="rent" value="rent" checked={orderType === 'rent'} onChange={(e) => setOrderType(e.target.value)} />
-                                <label className="form-check-label" htmlFor="rent">Rent only</label>
-                            </div>
-                            <div className="form-check">
-                                <input className="form-check-input" type="radio" name="orderType" id="sale" value="sale" checked={orderType === 'sale'} onChange={(e) => setOrderType(e.target.value)} />
-                                <label className="form-check-label" htmlFor="sale">Sale only</label>
-                            </div>
-                            <div className="form-check">
-                                <input className="form-check-input" type="radio" name="orderType" id="rentAndSale" value="rentAndSale" checked={orderType === 'rentAndSale'} onChange={(e) => setOrderType(e.target.value)} />
-                                <label className="form-check-label" htmlFor="rentAndSale">Rent and Sale</label>
-                            </div>
-                        </div>
-                        {orderType !== 'sale' && (
+                        {(orderType === 'rent' || orderType === 'sale') && (
                             <>
-                                <div className="form-group mb-3">
-                                    <label>Rental Date</label>
-                                    <input type="date" className="form-control" value={rentalDate} onChange={(e) => setRentalDate(e.target.value)} required />
+                                {
+                                    categories.map(cat => (
+                                        <div key={cat._id} className="mb-4">
+                                            <div className="card">
+                                                <div className="card-header">
+                                                    <h5>{cat.category}</h5>
+                                                </div>
+                                                <div className="card-body">
+                                                    <div className="dropdown">
+                                                        <button
+                                                            className="btn btn-secondary dropdown-toggle"
+                                                            type="button"
+                                                            id={`dropdown-${cat._id}`}
+                                                            data-bs-toggle="dropdown"
+                                                            aria-expanded="false"
+                                                        >
+                                                            Select Items
+                                                        </button>
+                                                        <ul className="dropdown-menu p-2" aria-labelledby={`dropdown-${cat._id}`}>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control mb-2"
+                                                                placeholder="Search items..."
+                                                                value={searchTerms[cat._id] || ''}
+                                                                onChange={(e) => setSearchTerms({
+                                                                    ...searchTerms,
+                                                                    [cat._id]: e.target.value
+                                                                })}
+                                                            />
+                                                            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                                                {filteredItems[cat._id] && filteredItems[cat._id].length > 0 ? (
+                                                                    filteredItems[cat._id].map(item => (
+                                                                        <li key={item._id} className="list-group-item">
+                                                                            <div className="form-check">
+                                                                                {orderType === 'rent' || orderType === 'both' ? (
+                                                                                    <>
+                                                                                        <input
+                                                                                            className="form-check-input"
+                                                                                            type="checkbox"
+                                                                                            value={item._id}
+                                                                                            id={`rent-item-${item._id}`}
+                                                                                            onChange={(e) => handleItemSelection(item._id, e.target.checked, 'rent')}
+                                                                                        />
+                                                                                        <label className="form-check-label" htmlFor={`rent-item-${item._id}`}>
+                                                                                            Rent: {item.item_name} ({item.description})
+                                                                                        </label>
+                                                                                    </>
+                                                                                ) : null}
+                                                                                {orderType === 'sale' || orderType === 'both' ? (
+                                                                                    <>
+                                                                                        <input
+                                                                                            className="form-check-input"
+                                                                                            type="checkbox"
+                                                                                            value={item._id}
+                                                                                            id={`sale-item-${item._id}`}
+                                                                                            onChange={(e) => handleItemSelection(item._id, e.target.checked, 'sale')}
+                                                                                        />
+                                                                                        <label className="form-check-label" htmlFor={`sale-item-${item._id}`}>
+                                                                                            Sale: {item.item_name} ({item.description})
+                                                                                        </label>
+                                                                                    </>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        </li>
+                                                                    ))
+                                                                ) : (
+                                                                    <li className="list-group-item">No items found.</li>
+                                                                )}
+                                                            </div>
+                                                        </ul>
+                                                    </div>
+
+                                                    {selectedItems.filter(i => i.category && i.category._id === cat._id).map(item => (
+                                                        <div key={item._id} className="mt-3">
+                                                            <label className="form-label">{item.item_name}</label>
+                                                            {item.type === 'rent' && (
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    min="1"
+                                                                    value={item.quantity}
+                                                                    onChange={(e) => handleQuantityChange(item._id, e.target.value, 'rent')}
+                                                                />
+                                                            )}
+                                                            {item.type === 'sale' && (
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    min="1"
+                                                                    value={item.quantity}
+                                                                    onChange={(e) => handleQuantityChange(item._id, e.target.value, 'sale')}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                }
+                            </>
+                        )}
+
+                        {orderType === 'both' && (
+                            <>
+                                <div className="mb-4">
+                                    <div className="card">
+                                        <div className="card-header">
+                                            <h5>Rental Items</h5>
+                                        </div>
+                                        <div className="card-body">
+                                            {categories.map(cat => (
+                                                <div key={cat._id} className="mb-4">
+                                                    <div className="dropdown">
+                                                        <button
+                                                            className="btn btn-secondary dropdown-toggle"
+                                                            type="button"
+                                                            id={`dropdown-rent-${cat._id}`}
+                                                            data-bs-toggle="dropdown"
+                                                            aria-expanded="false"
+                                                        >
+                                                            {cat.category}
+                                                        </button>
+
+                                                        <ul className="dropdown-menu p-2" aria-labelledby={`dropdown-${cat._id}`}>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control mb-2"
+                                                                placeholder="Search items..."
+                                                                value={searchTerms[cat._id] || ''}
+                                                                onChange={(e) => setSearchTerms({
+                                                                    ...searchTerms,
+                                                                    [cat._id]: e.target.value
+                                                                })}
+                                                            />
+                                                            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                                                {filteredItems[cat._id] && filteredItems[cat._id].length > 0 ? (
+                                                                    filteredItems[cat._id].map(item => (
+                                                                        <li key={item._id} className="list-group-item">
+                                                                            <div className="form-check">
+                                                                                {orderType === 'rent' || orderType === 'both' ? (
+                                                                                    <>
+                                                                                        <input
+                                                                                            className="form-check-input"
+                                                                                            type="checkbox"
+                                                                                            value={item._id}
+                                                                                            id={`rent-item-${item._id}`}
+                                                                                            onChange={(e) => handleItemSelection(item._id, e.target.checked, 'rent')}
+                                                                                        />
+                                                                                        <label className="form-check-label" htmlFor={`rent-item-${item._id}`}>
+                                                                                            Rent: {item.item_name} ({item.description})
+                                                                                        </label>
+                                                                                    </>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        </li>
+                                                                    ))
+                                                                ) : (
+                                                                    <li className="list-group-item">No items found.</li>
+                                                                )}
+                                                            </div>
+                                                        </ul>
+                                                    </div>
+
+                                                    {selectedItems.filter(i => i.type === 'rent' && i.category._id === cat._id).map(item => (
+                                                        <div key={item._id} className="mt-3">
+                                                            <label className="form-label">{item.item_name}</label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                min="1"
+                                                                value={item.quantity}
+                                                                onChange={(e) => handleQuantityChange(item._id, e.target.value, 'rent')}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="form-group mb-3">
-                                    <label>Return Date</label>
-                                    <input type="date" className="form-control" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} required />
+
+                                <div className="mb-4">
+                                    <div className="card">
+                                        <div className="card-header">
+                                            <h5>Sale Items</h5>
+                                        </div>
+                                        <div className="card-body">
+                                            {categories.map(cat => (
+                                                <div key={cat._id} className="mb-4">
+                                                    <div className="dropdown">
+                                                        <button
+                                                            className="btn btn-secondary dropdown-toggle"
+                                                            type="button"
+                                                            id={`dropdown-sale-${cat._id}`}
+                                                            data-bs-toggle="dropdown"
+                                                            aria-expanded="false"
+                                                        >
+                                                            {cat.category}
+                                                        </button>
+                                                        <ul className="dropdown-menu p-2" aria-labelledby={`dropdown-${cat._id}`}>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control mb-2"
+                                                                placeholder="Search items..."
+                                                                value={searchTerms[cat._id] || ''}
+                                                                onChange={(e) => setSearchTerms({
+                                                                    ...searchTerms,
+                                                                    [cat._id]: e.target.value
+                                                                })}
+                                                            />
+                                                            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                                                {filteredItems[cat._id] && filteredItems[cat._id].length > 0 ? (
+                                                                    filteredItems[cat._id].map(item => (
+                                                                        <li key={item._id} className="list-group-item">
+                                                                            <div className="form-check">
+                                                                                {orderType === 'sale' || orderType === 'both' ? (
+                                                                                    <>
+                                                                                        <input
+                                                                                            className="form-check-input"
+                                                                                            type="checkbox"
+                                                                                            value={item._id}
+                                                                                            id={`sale-item-${item._id}`}
+                                                                                            onChange={(e) => handleItemSelection(item._id, e.target.checked, 'sale')}
+                                                                                        />
+                                                                                        <label className="form-check-label" htmlFor={`sale-item-${item._id}`}>
+                                                                                            Sale: {item.item_name} ({item.description})
+                                                                                        </label>
+                                                                                    </>
+                                                                                ) : null}
+
+                                                                            </div>
+                                                                        </li>
+                                                                    ))
+                                                                ) : (
+                                                                    <li className="list-group-item">No items found.</li>
+                                                                )}
+                                                            </div>
+                                                        </ul>
+                                                    </div>
+
+                                                    {selectedItems.filter(i => i.type === 'sale' && i.category._id === cat._id).map(item => (
+                                                        <div key={item._id} className="mt-3">
+                                                            <label className="form-label">{item.item_name}</label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                min="1"
+                                                                value={item.quantity}
+                                                                onChange={(e) => handleQuantityChange(item._id, e.target.value, 'sale')}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         )}
-                        <div className="form-group mb-3">
-                            <label>Select Category</label>
-                            <select className="form-control mb-3" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} required>
-                                <option value="" disabled>Select Category</option>
-                                {categories.map(category => (
-                                    <option key={category._id} value={category._id}>{category.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group mb-3">
-                            <label>Select Items</label>
-                            <div className="dropdown">
-                                <button className="btn btn-secondary dropdown-toggle w-100" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Select Items
-                                </button>
-                                <ul className="dropdown-menu w-100" aria-labelledby="dropdownMenuButton" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {Array.isArray(items) && items.map(item => (
-                                        <li key={item._id}>
-                                            <button type="button" className={`dropdown-item ${selectedItems.includes(item._id) ? 'active' : ''}`} onClick={() => handleItemChange(item._id)}>
-                                                {item.item_name} - {item.description} | Rent: ${item.rentalRate}/day | Sale: ${item.saleRate}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                        {orderType !== 'sale' && (
-                            <div className="form-group mb-3">
-                                <label>Total Rent Amount:</label>
-                                <input type="text" className="form-control" value={totalRentAmount} readOnly />
+
+                        {(orderType === 'rent' || orderType === 'both') && (
+                            <div className="mb-3">
+                                <label htmlFor="returnDate" className="form-label">Return Date</label>
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    id="returnDate"
+                                    value={returnDate}
+                                    onChange={handleReturnDateChange}
+                                    required
+                                />
                             </div>
                         )}
-                        {orderType !== 'rent' && (
-                            <div className="form-group mb-3">
-                                <label>Total Sale Amount:</label>
-                                <input type="text" className="form-control" value={totalSaleAmount} readOnly />
+
+                        {(orderType === 'rent' || orderType === 'both') && (
+                            <div className="mb-3">
+                                <label htmlFor="returnTime" className="form-label">Return Time</label>
+                                <input
+                                    type="time"
+                                    className="form-control"
+                                    id="returnTime"
+                                    value={returnTime}
+                                    onChange={handleReturnTimeChange}
+                                    required
+                                />
                             </div>
                         )}
-                        <button type="submit" className="btn btn-primary">Submit</button>
+
+                        <div className="mb-3">
+                            {orderType === 'rent' || orderType === 'both' ? (
+                                <>
+                                    <label className="form-label">Total Rent Amount</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        value={totalRentAmount}
+                                        readOnly
+                                    />
+                                </>
+                            ) : null}
+                            {orderType === 'sale' || orderType === 'both' ? (
+                                <>
+                                    <label className="form-label">Total Sale Amount</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        value={totalSaleAmount}
+                                        readOnly
+                                    />
+                                </>
+                            ) : null}
+                        </div>
+
+                        <button type="submit" className="btn btn-primary">Create Rental</button>
                     </form>
                 </div>
             </div>
