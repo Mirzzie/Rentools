@@ -1,66 +1,36 @@
-// models/rentalModel.js
 const mongoose = require('mongoose');
 
-const RentalSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-    },
-    phone: {
-        type: String,
-        required: true,
-    },
-    address: {
-        type: String,
-        required: true,
-    },
-    items: [{
-        item_name: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Item',
-            required: true,
-        },
-        quantity: {
-            type: Number,
-            required: true,
-        },
-        spec: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Item',
-        },
-        specvalue: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Item',
-        },
-        unit: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Item',
-        },
-        rentalRate: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Item',
-            required: true,
-        },
+const rentalSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    address: { type: String, required: true },
+    rentalItems: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
+        quantity: { type: Number, required: true },
+        returnTime: { type: String },  // e.g., "03:45 PM"
     }],
-    rentalDate: {
-        type: Date,
-        default: Date.now,
-    },
-    returnDate: {
-        type: Date,
-        required: true,
-    },
-    status: {
-        type: String,
-        enum: ['rented', 'returned'],
-        default: 'rented',
-    },
-    totalAmount: {
-        type: Number,
-        required: true,
-    },
+    saleItems: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
+        quantity: { type: Number, required: true },
+    }],
+    rentalDate: { type: Date, default: Date.now },  // Auto-assigned rental date and time (timestamp)
+    returnDate: { type: Date },  // Optional return date
+    totalRentAmount: { type: Number, default: 0 },
+    totalSaleAmount: { type: Number, default: 0 }
 }, { timestamps: true });
 
-const RentalModel = mongoose.model('Rental', RentalSchema);
+// Pre-save hook to ensure returnDate is after rentalDate
+rentalSchema.pre('save', function (next) {
+    if (this.returnDate) {
+        const rentalDateTime = this.rentalDate;  // Use the automatically assigned timestamp for rentalDate
+        const returnDateTime = new Date(this.returnDate);
 
-module.exports = RentalModel;
+        if (returnDateTime < rentalDateTime) {
+            return next(new Error('Return date and time must be after rental date and time.'));
+        }
+    }
+    next();
+});
+
+module.exports = mongoose.model('Rental', rentalSchema);
+

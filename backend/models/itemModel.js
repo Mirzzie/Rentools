@@ -1,46 +1,12 @@
 const mongoose = require('mongoose');
 
-const ItemSchema = new mongoose.Schema({
-    item_name: {
-        type: String,
-        required: true,
-    },
-    category: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-        required: true,
-    },
-    type: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-        required: true,
-    },
-    spec: {
-        type: String,
-        required: true,
-    },
-    specvalue: {
-        type: String,
-        required: true,
-    },
-    unit: {
-        type: String,
-        required: true,
-    },
-    quantity: {
-        type: Number,
-        required: true,
-    },
-    rentalRate: {
-        type: Number,
-        required: true,
-    },
-    available: {
-        type: Boolean,
-        default: true,
-    },
+const itemSchema = new mongoose.Schema({
+    item_name: { type: String, required: true },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true }, // Ensuring category is required
+    description: { type: String },
+    rentalRate: { type: Number, required: true }, // Rental price per unit
+    saleRate: { type: Number, required: true }, // Sale price per unit
+    quantity: { type: Number, required: true, min: 0 }, // Non-negative quantity
 }, { timestamps: true });
 
-const ItemModel = mongoose.model("Item", ItemSchema);
-
-module.exports = ItemModel;
+module.exports = mongoose.model('Item', itemSchema);
