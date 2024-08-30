@@ -6,9 +6,9 @@ const mongoose = require('mongoose');
 
 
 const userRoutes = require('./routes/userRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
+
 
 
 
@@ -31,9 +31,9 @@ mongoose.connect(db_uri, {
 
 
 app.use('/api/users', userRoutes);
-app.use('/api/categories', categoryRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
+app.use('/api/rentals/:id/return-all', rentalRoutes);
 
 
 // Error handling middleware

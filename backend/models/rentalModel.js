@@ -6,12 +6,12 @@ const rentalSchema = new mongoose.Schema({
     address: { type: String, required: true },
     rentalItems: [{
         _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
-        quantity: { type: Number, required: true },
+        stock: { type: Number, required: true },
         returnTime: { type: String },  // e.g., "03:45 PM"
     }],
     saleItems: [{
         _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
-        quantity: { type: Number, required: true },
+        stock: { type: Number, required: true },
     }],
     rentalDate: { type: Date, default: Date.now },  // Auto-assigned rental date and time (timestamp)
     returnDate: { type: Date },  // Optional return date

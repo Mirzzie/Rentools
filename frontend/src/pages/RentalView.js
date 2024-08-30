@@ -1,14 +1,13 @@
 import React from 'react';
-import RentalForm from '../components/RentalForm';
+import RentalView from '../components/RentalView';
 
-
-const HomePage = () => {
+const ViewRental = () => {
     return (
         <div className="container mt-4">
-            <h1 className="text-center mb-4">Rental Tool Shop</h1>
+            <h1 className="text-center mb-4">View Rentals</h1>
             <div className="row mt-4">
                 <div className="col-md-6">
-                    <RentalForm />
+                    <RentalView />
                 </div>
             </div>
 
@@ -16,4 +15,4 @@ const HomePage = () => {
     );
 };
 
-export default HomePage;
+export default ViewRental;
