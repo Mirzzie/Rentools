@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AddItems from './pages/AddItems';
 import ItemsModify from './pages/ItemsModify';
-import ViewRental from './pages/RentalView';
+import OrderView from './pages/OrderView'; // Correct the import to ensure it's accurate
 
 const App = () => {
   return (
@@ -12,7 +12,7 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/additems" element={<AddItems />} />
         <Route path="/itemsmodify" element={<ItemsModify />} />
-        <Route path="/viewrentals" element={<ViewRental />} />
+        <Route path="/orderview" element={<OrderView />} /> {/* Corrected path */}
       </Routes>
     </Router>
   );

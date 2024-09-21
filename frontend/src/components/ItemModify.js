@@ -33,7 +33,7 @@
 //             item_name: editItem.item_name,
 //             rentalRate: editItem.rentalRate,
 //             saleRate: editItem.saleRate,
-//             quantity: editItem.quantity,
+//             stock: editItem.stock,
 //         };
 
 //         api.put(`/items/${editItem._id}`, updatedItem)
@@ -74,7 +74,7 @@
 //                             <th>Description</th>
 //                             <th>Rental Rate</th>
 //                             <th>Sale Rate</th>
-//                             <th>Quantity</th>
+//                             <th>stock</th>
 //                             <th>Actions</th>
 //                         </tr>
 //                     </thead>
@@ -85,7 +85,7 @@
 //                                 <td>{item.description}</td>
 //                                 <td>{item.rentalRate !== undefined ? `₹${item.rentalRate}` : '-'}</td>
 //                                 <td>{item.saleRate !== undefined ? `₹${item.saleRate}` : '-'}</td>
-//                                 <td>{item.quantity}</td>
+//                                 <td>{item.stock}</td>
 //                                 <td>
 //                                     <Button variant="warning" className="me-2" onClick={() => handleEdit(item)}>Edit</Button>
 //                                     <Button variant="danger" onClick={() => handleDelete(item._id)}>Delete</Button>
@@ -146,11 +146,11 @@
 //                                 </Form.Group>
 //                             )}
 //                             <Form.Group className="mb-3">
-//                                 <Form.Label>Quantity</Form.Label>
+//                                 <Form.Label>stock</Form.Label>
 //                                 <Form.Control
 //                                     type="number"
-//                                     value={editItem.quantity}
-//                                     onChange={(e) => setEditItem({ ...editItem, quantity: e.target.value })}
+//                                     value={editItem.stock}
+//                                     onChange={(e) => setEditItem({ ...editItem, stock: e.target.value })}
 //                                     required
 //                                 />
 //                             </Form.Group>
@@ -204,7 +204,7 @@ const ItemsPage = () => {
             description: editItem.description, // Ensure description is included
             rentalRate: editItem.rentalRate,
             saleRate: editItem.saleRate,
-            quantity: editItem.quantity,
+            stock: editItem.stock,
         };
 
         api.put(`/items/${editItem._id}`, updatedItem)
@@ -245,7 +245,7 @@ const ItemsPage = () => {
                             <th>Description</th>
                             <th>Rental Rate</th>
                             <th>Sale Rate</th>
-                            <th>Quantity</th>
+                            <th>Stock</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -256,7 +256,7 @@ const ItemsPage = () => {
                                 <td>{item.description}</td>
                                 <td>{item.rentalRate !== undefined ? `₹${item.rentalRate}` : '-'}</td>
                                 <td>{item.saleRate !== undefined ? `₹${item.saleRate}` : '-'}</td>
-                                <td>{item.quantity}</td>
+                                <td>{item.stock}</td>
                                 <td>
                                     <Button variant="warning" className="me-2" onClick={() => handleEdit(item)}>Edit</Button>
                                     <Button variant="danger" onClick={() => handleDelete(item._id)}>Delete</Button>
@@ -317,11 +317,11 @@ const ItemsPage = () => {
                                 </Form.Group>
                             )}
                             <Form.Group className="mb-3">
-                                <Form.Label>Quantity</Form.Label>
+                                <Form.Label>stock</Form.Label>
                                 <Form.Control
                                     type="number"
-                                    value={editItem.quantity}
-                                    onChange={(e) => setEditItem({ ...editItem, quantity: e.target.value })}
+                                    value={editItem.stock}
+                                    onChange={(e) => setEditItem({ ...editItem, stock: e.target.value })}
                                     required
                                 />
                             </Form.Group>

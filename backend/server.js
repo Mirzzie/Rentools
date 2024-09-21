@@ -7,8 +7,8 @@ const mongoose = require('mongoose');
 
 const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
-const rentalRoutes = require('./routes/rentalRoutes');
-
+const orderRoutes = require('./routes/orderRoutes');
+const orderViewRoutes = require('./routes/orderViewRoutes');
 
 
 
@@ -32,8 +32,9 @@ mongoose.connect(db_uri, {
 
 app.use('/api/users', userRoutes);
 app.use('/api/items', itemRoutes);
-app.use('/api/rentals', rentalRoutes);
-app.use('/api/rentals/:id/return-all', rentalRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/orderview', orderViewRoutes);
+
 
 
 // Error handling middleware

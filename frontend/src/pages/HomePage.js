@@ -1,14 +1,14 @@
 import React from 'react';
-import RentalForm from '../components/RentalForm';
+import OrderForm from '../components/OrderForm';
 
 
 const HomePage = () => {
     return (
         <div className="container mt-4">
-            <h1 className="text-center mb-4">Rental Tool Shop</h1>
+            <h1 className="text-center mb-4">Tool Rent Shop</h1>
             <div className="row mt-4">
                 <div className="col-md-6">
-                    <RentalForm />
+                    <OrderForm />
                 </div>
             </div>
 

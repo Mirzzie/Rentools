@@ -138,7 +138,7 @@ const ItemForm = () => {
                         )}
 
                         <Form.Group as={Row} className="mb-3" controlId="stock">
-                            <Form.Label column sm={3}>stock</Form.Label>
+                            <Form.Label column sm={3}>Stock</Form.Label>
                             <Col sm={9}>
                                 <Form.Control
                                     type="number"

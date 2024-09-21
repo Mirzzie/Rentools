@@ -1,13 +1,13 @@
 import React from 'react';
-import RentalView from '../components/RentalView';
+import OrderView from '../components/OrderView';
 
-const ViewRental = () => {
+const ViewOrder = () => {
     return (
         <div className="container mt-4">
-            <h1 className="text-center mb-4">View Rentals</h1>
+            <h1 className="text-center mb-4">View Orders</h1>
             <div className="row mt-4">
                 <div className="col-md-6">
-                    <RentalView />
+                    <OrderView />
                 </div>
             </div>
 
@@ -15,4 +15,4 @@ const ViewRental = () => {
     );
 };
 
-export default ViewRental;
+export default ViewOrder;
