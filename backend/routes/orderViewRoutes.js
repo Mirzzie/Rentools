@@ -6,6 +6,6 @@ const orderViewController = require('../controllers/orderViewController');
 router.get('/orders', orderViewController.getOrders);
 
 // Acknowledge the return of a specific rental item and update stock
-router.post('/acknowledge-item-return/:orderId/:itemId', orderViewController.acknowledgeReturn);
+router.post('/return/:orderId/:itemId', orderViewController.acknowledgeReturn);
 
 module.exports = router;

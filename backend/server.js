@@ -33,7 +33,7 @@ mongoose.connect(db_uri, {
 app.use('/api/users', userRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/orderview', orderViewRoutes);
+app.use('/api/orders', orderViewRoutes);
 
 
 

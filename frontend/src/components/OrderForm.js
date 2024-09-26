@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { Form, Button, Dropdown, Card, InputGroup, FormControl, Row, Col, Badge } from 'react-bootstrap';
+import { Form, Button, Dropdown, Card, InputGroup, FormControl, Row, Col, Badge, ListGroup } from 'react-bootstrap';
 
 const OrderForm = () => {
     const [items, setItems] = useState([]);
@@ -17,14 +17,16 @@ const OrderForm = () => {
     const [itemSearchQuery, setItemSearchQuery] = useState('');
     const [validated, setValidated] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
 
+    // Fetch items from backend
     useEffect(() => {
         api.get('/items')
             .then(response => setItems(response.data))
             .catch(error => console.error('Error fetching items:', error));
     }, []);
 
+    // Calculate total amounts
     useEffect(() => {
         setTotalRentAmount(selectedRentItems.reduce((total, item) => total + (item.rentalRate * item.stock), 0));
         setTotalSaleAmount(selectedSaleItems.reduce((total, item) => total + (item.saleRate * item.stock), 0));
@@ -34,59 +36,74 @@ const OrderForm = () => {
         setOrderType(e.target.value);
         setSelectedRentItems([]);
         setSelectedSaleItems([]);
+        setReturnDate('');
+        setReturnTime('');
     };
 
+    // Handle selection or deselection of items
     const handleSelectChange = (item, type) => {
-        const updatedItems = type === 'rent' ? selectedRentItems : selectedSaleItems;
+        const isRent = type === 'rent';
+        const updatedItems = isRent ? selectedRentItems : selectedSaleItems;
         const isSelected = updatedItems.some(i => i._id === item._id);
 
         if (isSelected) {
             const newItems = updatedItems.filter(i => i._id !== item._id);
-            type === 'rent' ? setSelectedRentItems(newItems) : setSelectedSaleItems(newItems);
+            isRent ? setSelectedRentItems(newItems) : setSelectedSaleItems(newItems);
         } else {
             const newItem = { ...item, stock: 1 };
-            type === 'rent' ? setSelectedRentItems([...updatedItems, newItem]) : setSelectedSaleItems([...updatedItems, newItem]);
+            isRent ? setSelectedRentItems([...updatedItems, newItem]) : setSelectedSaleItems([...updatedItems, newItem]);
         }
     };
 
+    // Handle changes in stock quantity
     const handleStockChange = (e, item, type) => {
         const newStock = parseInt(e.target.value, 10) || 1;
-        const updatedItems = type === 'rent' ? selectedRentItems : selectedSaleItems;
         const availableStock = items.find(i => i._id === item._id)?.stock || 1;
-
         const adjustedStock = Math.min(Math.max(newStock, 1), availableStock);
 
-        const newItems = updatedItems.map(i =>
+        const updatedItems = (type === 'rent' ? selectedRentItems : selectedSaleItems).map(i =>
             i._id === item._id ? { ...i, stock: adjustedStock } : i
         );
 
-        type === 'rent' ? setSelectedRentItems(newItems) : setSelectedSaleItems(newItems);
+        type === 'rent' ? setSelectedRentItems(updatedItems) : setSelectedSaleItems(updatedItems);
     };
 
+    // Filter items based on search query
     const filteredItems = items.filter(item =>
         item.item_name.toLowerCase().includes(itemSearchQuery.toLowerCase()) &&
         (orderType === 'rent' ? item.rentalRate : orderType === 'sale' ? item.saleRate : true)
     );
 
-    const itemOptions = (items) => {
+    // Generate item options for the dropdown
+    const itemOptions = (items, type) => {
         return items.map(item => (
             <Dropdown.Item
                 key={item._id}
-                as="button"
-                onClick={() => handleSelectChange(item, item.rentalRate ? 'rent' : 'sale')}
                 className={`d-flex align-items-center ${item.stock === 0 ? 'text-muted' : ''}`}
                 disabled={item.stock === 0}
             >
-                <strong>{item.item_name} {item.stock === 0 && <Badge bg="danger">Out of Stock</Badge>}</strong>
-                <small className="text-muted ms-2">{item.description}</small>
-                <Badge bg="info" className="ms-2">
-                    {item.rentalRate ? `₹${item.rentalRate}/day` : `₹${item.saleRate}`}
-                </Badge>
-                <Badge bg="secondary" className="ms-2">Available Stock: {item.stock}</Badge>
+                <Form.Check
+                    checked={type === 'rent' ? selectedRentItems.some(i => i._id === item._id) : selectedSaleItems.some(i => i._id === item._id)}
+                    onChange={() => handleSelectChange(item, type)}
+                    label={
+                        <span className="d-flex justify-content-between w-100">
+                            <span>
+                                <strong>{item.item_name}</strong>
+                                {item.stock === 0 && <Badge bg="danger" className="ms-2">Out of Stock</Badge>}
+                                <small className="text-muted ms-2">{item.description}</small>
+                            </span>
+                            <Badge bg="info" className="ms-2">
+                                {type === 'rent' ? `₹${item.rentalRate}/day` : `₹${item.saleRate}`}
+                            </Badge>
+                            <Badge bg="secondary" className="ms-2">Stock: {item.stock}</Badge>
+                        </span>
+                    }
+                />
             </Dropdown.Item>
         ));
     };
 
+    // Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
         const form = e.currentTarget;
@@ -105,28 +122,25 @@ const OrderForm = () => {
             name,
             phone,
             address,
-            rentItems: selectedRentItems.map(item => ({
-                _id: item._id,
-                stock: item.stock,
-                returnTime: returnTime || ''
-            })),
+            rentItems: selectedRentItems.map(item => ({ _id: item._id, stock: item.stock })),
             saleItems: selectedSaleItems.map(item => ({ _id: item._id, stock: item.stock })),
             orderDate: new Date().toISOString().split('T')[0],
             returnDate,
+            returnTime,
             totalRentAmount,
             totalSaleAmount
         };
 
         api.post('/orders', orderData)
-            .then(response => {
+            .then(() => {
                 alert('Order created successfully!');
                 resetForm();
-                refreshItems();
             })
             .catch(error => console.error('Error creating order:', error))
             .finally(() => setLoading(false));
     };
 
+    // Reset form after successful submission
     const resetForm = () => {
         setName('');
         setPhone('');
@@ -137,12 +151,6 @@ const OrderForm = () => {
         setReturnDate('');
         setReturnTime('');
         setValidated(false);
-    };
-
-    const refreshItems = () => {
-        api.get('/items')
-            .then(response => setItems(response.data))
-            .catch(error => console.error('Error fetching items:', error));
     };
 
     const grandTotal = totalRentAmount + totalSaleAmount;
@@ -203,7 +211,7 @@ const OrderForm = () => {
                             <Form.Control.Feedback type="invalid">Please select an order type.</Form.Control.Feedback>
                         </Form.Group>
 
-                        {orderType !== 'sale' && (
+                        {(orderType === 'rent' || orderType === 'both') && (
                             <>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Return Date</Form.Label>
@@ -211,125 +219,154 @@ const OrderForm = () => {
                                         type="date"
                                         value={returnDate}
                                         onChange={(e) => setReturnDate(e.target.value)}
-                                        required={orderType !== 'sale'}
+                                        required
                                         min={new Date().toISOString().split('T')[0]} // Set min to today's date
                                     />
                                     <Form.Control.Feedback type="invalid">Please provide a return date.</Form.Control.Feedback>
-
                                 </Form.Group>
-                                <Form.Group className="mb-3">
+                                <Form.Group
+
+                                    className="mb-3">
                                     <Form.Label>Return Time</Form.Label>
                                     <Form.Control
                                         type="time"
                                         value={returnTime}
                                         onChange={(e) => setReturnTime(e.target.value)}
+                                        required
                                     />
+                                    <Form.Control.Feedback type="invalid">Please provide a return time.</Form.Control.Feedback>
                                 </Form.Group>
                             </>
                         )}
 
-                        <Form.Group className="mb-4">
-                            <Form.Label>Search Items</Form.Label>
-                            <InputGroup>
-                                <Dropdown show={dropdownOpen} onToggle={(nextShow) => setDropdownOpen(nextShow)}>
-                                    <Dropdown.Toggle variant="outline-secondary" id="dropdown-basic">
-                                        Select Items
+
+                        {(orderType === 'rent' || orderType === 'both') && (
+                            <Form.Group className="mb-3">
+                                <Form.Label>Select Rent Items</Form.Label>
+                                <Dropdown onToggle={(isOpen) => setShowSearch(isOpen)}>
+                                    <Dropdown.Toggle variant="outline-primary" id="dropdown-rent">
+                                        Rent Items
                                     </Dropdown.Toggle>
-                                    <Dropdown.Menu style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                        <Dropdown.ItemText>
+                                    <Dropdown.Menu className="w-100">
+                                        <InputGroup className={`p-2 ${showSearch ? '' : 'd-none'}`}>
                                             <FormControl
-                                                placeholder="Search items..."
+                                                placeholder="Search Rent Items"
                                                 value={itemSearchQuery}
                                                 onChange={(e) => setItemSearchQuery(e.target.value)}
                                             />
-                                        </Dropdown.ItemText>
-                                        {itemOptions(filteredItems)}
+                                        </InputGroup>
+                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                            {filteredItems.length > 0 ? (
+                                                itemOptions(filteredItems.filter(item => item.rentalRate), 'rent')
+                                            ) : (
+                                                <Dropdown.Item className="text-muted">No rent items found</Dropdown.Item>
+                                            )}
+                                        </div>
                                     </Dropdown.Menu>
                                 </Dropdown>
-                            </InputGroup>
-                        </Form.Group>
+                            </Form.Group>
+                        )}
 
-                        <Row className="g-3">
-                            <Col md={orderType === 'both' ? 6 : 12}> {/* Adjusts column size based on order type */}
-                                {(orderType === 'both' || orderType === 'rent') && selectedRentItems.length > 0 ? (
-                                    <>
-                                        <h5>{orderType === 'rent' ? 'Selected Rent Items' : 'Selected Items for Rent'}</h5>
-                                        {selectedRentItems.map(item => (
-                                            <Card key={item._id} className="mb-3">
-                                                <Card.Body className="d-flex justify-content-between align-items-center">
-                                                    <div className="me-2">
-                                                        <strong>{item.item_name}</strong>
-                                                        <div className="text-muted">{item.description}</div>
-                                                        <Badge bg="info" className="me-1">{`₹${item.rentalRate}/day`}</Badge>
-                                                        <InputGroup className="mt-2" style={{ width: '100px' }}>
-                                                            <FormControl
-                                                                type="number"
-                                                                value={item.stock}
-                                                                onChange={(e) => handleStockChange(e, item, 'rent')}
-                                                                min="1"
-                                                                max={items.find(i => i._id === item._id)?.stock || 1}
-                                                            />
-                                                        </InputGroup>
-                                                    </div>
-                                                    <Button
-                                                        variant="danger"
-                                                        onClick={() => handleSelectChange(item, 'rent')}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </Card.Body>
-                                            </Card>
-                                        ))}
-                                    </>
-                                ) : (
-                                    orderType === 'both' && <p>No rent items selected.</p>
-                                )}
+                        {(orderType === 'sale' || orderType === 'both') && (
+                            <Form.Group className="mb-3">
+                                <Form.Label>Select Sale Items</Form.Label>
+                                <Dropdown onToggle={(isOpen) => setShowSearch(isOpen)}>
+                                    <Dropdown.Toggle variant="outline-primary" id="dropdown-sale">
+                                        Sale Items
+                                    </Dropdown.Toggle>
+                                    <Dropdown.Menu className="w-100">
+                                        <InputGroup className={`p-2 ${showSearch ? '' : 'd-none'}`}>
+                                            <FormControl
+                                                placeholder="Search Sale Items"
+                                                value={itemSearchQuery}
+                                                onChange={(e) => setItemSearchQuery(e.target.value)}
+                                            />
+                                        </InputGroup>
+                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                            {filteredItems.length > 0 ? (
+                                                itemOptions(filteredItems.filter(item => item.saleRate), 'sale')
+                                            ) : (
+                                                <Dropdown.Item className="text-muted">No sale items found</Dropdown.Item>
+                                            )}
+                                        </div>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </Form.Group>
+                        )}
+
+
+
+                        {selectedRentItems.length > 0 && (
+                            <Card className="mb-4">
+                                <Card.Header>Selected Rent Items</Card.Header>
+                                <ListGroup variant="flush">
+                                    {selectedRentItems.map(item => (
+                                        <ListGroup.Item key={item._id}>
+                                            <Row>
+                                                <Col md={8}>{item.item_name}</Col>
+                                                <Col md={2}>
+                                                    <Form.Control
+                                                        type="number"
+                                                        value={item.stock}
+                                                        min={1}
+                                                        max={items.find(i => i._id === item._id)?.stock || 1}
+                                                        onChange={(e) => handleStockChange(e, item, 'rent')}
+                                                    />
+                                                </Col>
+                                                <Col md={2}>
+                                                    <Button variant="danger" onClick={() => handleSelectChange(item, 'rent')}>Remove</Button>
+                                                </Col>
+                                            </Row>
+                                        </ListGroup.Item>
+                                    ))}
+                                </ListGroup>
+                            </Card>
+                        )}
+
+
+                        {selectedSaleItems.length > 0 && (
+                            <Card className="mb-4">
+                                <Card.Header>Selected Sale Items</Card.Header>
+                                <ListGroup variant="flush">
+                                    {selectedSaleItems.map(item => (
+                                        <ListGroup.Item key={item._id}>
+                                            <Row>
+                                                <Col md={8}>{item.item_name}</Col>
+                                                <Col md={2}>
+                                                    <Form.Control
+                                                        type="number"
+                                                        value={item.stock}
+                                                        min={1}
+                                                        max={items.find(i => i._id === item._id)?.stock || 1}
+                                                        onChange={(e) => handleStockChange(e, item, 'sale')}
+                                                    />
+                                                </Col>
+                                                <Col md={2}>
+                                                    <Button variant="danger" onClick={() => handleSelectChange(item, 'sale')}>Remove</Button>
+                                                </Col>
+                                            </Row>
+                                        </ListGroup.Item>
+                                    ))}
+                                </ListGroup>
+                            </Card>
+                        )}
+
+                        {/* Order Summary */}
+                        <Row className="mb-4">
+                            <Col>
+                                <h5>Total Rent Amount: ₹{totalRentAmount}</h5>
                             </Col>
-                            <Col md={orderType === 'both' ? 6 : 12}> {/* Adjusts column size based on order type */}
-                                {(orderType === 'both' || orderType === 'sale') && selectedSaleItems.length > 0 ? (
-                                    <>
-                                        <h5>{orderType === 'sale' ? 'Selected Sale Items' : 'Selected Items for Sale'}</h5>
-                                        {selectedSaleItems.map(item => (
-                                            <Card key={item._id} className="mb-3">
-                                                <Card.Body className="d-flex justify-content-between align-items-center">
-                                                    <div className="me-2">
-                                                        <strong>{item.item_name}</strong>
-                                                        <div className="text-muted">{item.description}</div>
-                                                        <Badge bg="info" className="me-1">{`₹${item.saleRate}`}</Badge>
-                                                        <InputGroup className="mt-2" style={{ width: '100px' }}>
-                                                            <FormControl
-                                                                type="number"
-                                                                value={item.stock}
-                                                                onChange={(e) => handleStockChange(e, item, 'sale')}
-                                                                min="1"
-                                                                max={items.find(i => i._id === item._id)?.stock || 1}
-                                                            />
-                                                        </InputGroup>
-                                                    </div>
-                                                    <Button
-                                                        variant="danger"
-                                                        onClick={() => handleSelectChange(item, 'sale')}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </Card.Body>
-                                            </Card>
-                                        ))}
-                                    </>
-                                ) : (
-                                    orderType === 'both' && <p>No sale items selected.</p>
-                                )}
+                            <Col>
+                                <h5>Total Sale Amount: ₹{totalSaleAmount}</h5>
+                            </Col>
+                            <Col>
+                                <h5>Grand Total: ₹{grandTotal}</h5>
                             </Col>
                         </Row>
 
-                        <hr />
-
-                        <h5>Total Rent Amount: ₹{totalRentAmount}</h5>
-                        <h5>Total Sale Amount: ₹{totalSaleAmount}</h5>
-                        <h4>Grand Total: ₹{grandTotal}</h4>
-
+                        {/* Submit Button */}
                         <Button variant="primary" type="submit" disabled={loading}>
-                            {loading ? 'Submitting...' : 'Submit Order'}
+                            {loading ? 'Placing Order...' : 'Place Order'}
                         </Button>
                     </Form>
                 </div>
@@ -339,4 +376,7 @@ const OrderForm = () => {
 };
 
 export default OrderForm;
+
+
+
 
