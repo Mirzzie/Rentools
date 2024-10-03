@@ -1,14 +1,14 @@
 import React from 'react';
-import OrderForm from '../components/OrderForm';
+import HomePage from '../components/HomePage';
 
 
-const HomePage = () => {
+const LandingPage = () => {
     return (
         <div className="container mt-4">
             <h1 className="text-center mb-4">Tool Rent Shop</h1>
             <div className="row mt-4">
-                <div className="col-md-6">
-                    <OrderForm />
+                <div className="col-md-14">
+                    <HomePage />
                 </div>
             </div>
 
@@ -16,4 +16,4 @@ const HomePage = () => {
     );
 };
 
-export default HomePage;
+export default LandingPage;

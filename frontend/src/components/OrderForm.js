@@ -131,13 +131,19 @@ const OrderForm = () => {
             totalSaleAmount
         };
 
+        console.log("Submitting order data: ", orderData);
+
         api.post('/orders', orderData)
             .then(() => {
                 alert('Order created successfully!');
                 resetForm();
             })
-            .catch(error => console.error('Error creating order:', error))
+            .catch(error => {
+                console.error('Error creating order:', error.response.data || error.message);
+                alert(`Error creating order: ${error.response.data.message || error.message}`);
+            })
             .finally(() => setLoading(false));
+
     };
 
     // Reset form after successful submission
