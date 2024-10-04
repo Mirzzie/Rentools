@@ -42,3 +42,16 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send({ error: err.message });
 });
+
+let cart = [];
+
+app.post('/cart', (req, res) => {
+    const { item } = req.body;
+    cart.push(item);
+    res.status(200).send(cart);
+  });
+  
+  app.get('/cart', (req, res) => {
+    res.status(200).send(cart);
+  });
+  
