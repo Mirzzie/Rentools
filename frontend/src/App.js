@@ -1,15 +1,22 @@
 import React from 'react';
-import { RentalProvider } from './context/RentalContext';
-import { ItemProvider } from './context/ItemContext';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+import OrderForm from './pages/OrderForm';
+import AddItems from './pages/AddItems';
+import ItemsModify from './pages/ItemsModify';
+import OrderView from './pages/OrderView'; // Correct the import to ensure it's accurate
 
 const App = () => {
   return (
-    <RentalProvider>
-      <ItemProvider>
-        <HomePage />
-      </ItemProvider>
-    </RentalProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/additems" element={<AddItems />} />
+        <Route path="/itemsmodify" element={<ItemsModify />} />
+        <Route path="/orderview" element={<OrderView />} />
+        <Route path="/orderform" element={<OrderForm />} />
+      </Routes>
+    </Router>
   );
 };
 

@@ -11,19 +11,9 @@ exports.createItem = async (req, res) => {
     }
 };
 
-exports.getItemsByCategory = async (req, res) => {
-    try {
-        const { categoryId } = req.params;
-        const items = await Item.find({ category: categoryId }).populate('category');
-        res.status(200).json(items);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
 exports.getItems = async (req, res) => {
     try {
-        const items = await Item.find({}).populate('category');
+        const items = await Item.find({});
         res.status(200).json(items);
     } catch (error) {
         console.error(error); // Log error for debugging
@@ -33,7 +23,7 @@ exports.getItems = async (req, res) => {
 
 exports.getItem = async (req, res) => {
     try {
-        const item = await Item.findById(req.params.id).populate('category');
+        const item = await Item.findById(req.params.id);
         if (!item) {
             return res.status(404).json({ error: 'Item not found' });
         }
@@ -46,7 +36,7 @@ exports.getItem = async (req, res) => {
 
 exports.updateItem = async (req, res) => {
     try {
-        const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('category');
+        const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!item) {
             return res.status(404).json({ error: 'Item not found' });
         }

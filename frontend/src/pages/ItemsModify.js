@@ -1,14 +1,13 @@
 import React from 'react';
-import HomePage from '../components/HomePage';
+import ItemsPage from '../components/ItemModify';
 
-
-const LandingPage = () => {
+const ItemsModify = () => {
     return (
         <div className="container mt-4">
-            <h1 className="text-center mb-4">Tool Rent Shop</h1>
+            <h1 className="text-center mb-4">Modify Items</h1>
             <div className="row mt-4">
                 <div className="col-md-14">
-                    <HomePage />
+                    <ItemsPage />
                 </div>
             </div>
 
@@ -16,4 +15,4 @@ const LandingPage = () => {
     );
 };
 
-export default LandingPage;
+export default ItemsModify;
