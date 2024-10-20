@@ -9,7 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const orderViewRoutes = require('./routes/orderViewRoutes');
-
+const recordRoutes = require('./routes/recordRoutes');
 
 
 app.use(cors());
@@ -34,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/orders', orderViewRoutes);
+app.use('/api/records', recordRoutes);
 
 
 

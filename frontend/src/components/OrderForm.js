@@ -108,6 +108,7 @@ const OrderForm = () => {
         e.preventDefault();
         const form = e.currentTarget;
 
+        // Validation checks
         if (form.checkValidity() === false ||
             ((orderType === 'rent' || orderType === 'both') && selectedRentItems.length === 0) ||
             ((orderType === 'sale' || orderType === 'both') && selectedSaleItems.length === 0)) {
@@ -118,6 +119,7 @@ const OrderForm = () => {
 
         setLoading(true);
 
+        // Prepare order data
         const orderData = {
             name,
             phone,
@@ -133,18 +135,34 @@ const OrderForm = () => {
 
         console.log("Submitting order data: ", orderData);
 
+        // Submit order data to the orders endpoint
         api.post('/orders', orderData)
             .then(() => {
-                alert('Order created successfully!');
-                resetForm();
+                // After order submission, automatically send to records
+                return api.post('/records', {
+                    name,
+                    phone,
+                    address,
+                    rentItems: selectedRentItems.map(item => ({ _id: item._id, stock: item.stock })),
+                    saleItems: selectedSaleItems.map(item => ({ _id: item._id, stock: item.stock })),
+                    orderDate: new Date().toISOString().split('T')[0],
+                    returnDate,
+                    returnTime,
+                    totalRentAmount,
+                    totalSaleAmount
+                });
+            })
+            .then(() => {
+                alert('Order recorded successfully!');
+                resetForm(); // Reset the form after recording the order
             })
             .catch(error => {
                 console.error('Error creating order:', error.response.data || error.message);
                 alert(`Error creating order: ${error.response.data.message || error.message}`);
             })
             .finally(() => setLoading(false));
-
     };
+
 
     // Reset form after successful submission
     const resetForm = () => {

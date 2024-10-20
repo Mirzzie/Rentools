@@ -1,14 +1,13 @@
 import React from 'react';
-import HomePage from '../components/HomePage';
+import RecordView from '../components/RecordView';
 
-
-const LandingPage = () => {
+const ViewRecord = () => {
     return (
         <div className="container mt-4">
-            <h1 className="text-center mb-4">RENTOOLS</h1>
+            <h1 className="text-center mb-4">Record View</h1>
             <div className="row mt-4">
                 <div className="col-md-14">
-                    <HomePage />
+                    <RecordView />
                 </div>
             </div>
 
@@ -16,4 +15,4 @@ const LandingPage = () => {
     );
 };
 
-export default LandingPage;
+export default ViewRecord;

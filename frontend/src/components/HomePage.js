@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
-import { PlusCircle, PencilSquare, FileEarmarkText, ListCheck } from 'react-bootstrap-icons'; // Bootstrap Icons
+import { PlusCircle, PencilSquare, FileEarmarkText, ListCheck, ClipboardData } from 'react-bootstrap-icons'; // Import an additional Bootstrap icon
 
 const HomePage = () => {
     return (
@@ -63,6 +63,20 @@ const HomePage = () => {
                             <Card.Text>Create new orders for renting or purchasing tools.</Card.Text>
                             <Link to="/orderform">
                                 <Button variant="success" className="mt-auto w-100">Go to Order Form</Button>
+                            </Link>
+                        </Card.Body>
+                    </Card>
+                </Col>
+
+                {/* Record View */}
+                <Col md={4}>
+                    <Card className="shadow h-100">
+                        <Card.Body className="d-flex flex-column align-items-center">
+                            <ClipboardData size={50} className="mb-3 text-secondary" />
+                            <Card.Title>View Records</Card.Title>
+                            <Card.Text>View the complete history of orders and records.</Card.Text>
+                            <Link to="/records">
+                                <Button variant="secondary" className="mt-auto w-100">Go to Records</Button>
                             </Link>
                         </Card.Body>
                     </Card>
