@@ -1,5 +1,6 @@
 const Order = require('../models/orderModel');
 const Item = require('../models/itemModel');
+const Record = require('../models/recordModel');
 
 // Create a new order
 exports.createOrder = async (req, res) => {
@@ -58,7 +59,26 @@ exports.createOrder = async (req, res) => {
             totalSaleAmount
         });
 
+
         await order.save();
+
+
+
+        // Also save the order to the Record collection
+        const record = new Record({
+            name,
+            phone,
+            address,
+            rentItems,
+            saleItems,
+            orderDate: new Date(),
+            returnDate,
+            totalRentAmount,
+            totalSaleAmount
+        });
+
+        await record.save(); // Save the record for record-keeping
+
         res.status(201).json(order);
     } catch (error) {
         res.status(400).json({ error: error.message });
