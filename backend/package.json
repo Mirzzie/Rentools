@@ -6,6 +6,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon ./server.js"
   },
+  "pkg": {
+    "scripts": ["server.js"],
+    "assets": ["views/**/*", "public/**/*", "../frontend/build/**/*"]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -15,7 +19,6 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "mongoose": "^8.5.1",
-    "moongoose": "^0.0.1",
     "nodemon": "^3.1.4"
   }
 }
