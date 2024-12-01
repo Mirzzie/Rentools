@@ -6,7 +6,7 @@ const path = require('path');
 
 const app = express();
 
-// Import your route files
+// Import route files
 const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -25,9 +25,6 @@ mongoose.connect(db_uri, {
     tlsAllowInvalidCertificates: true,
 }).then(() => {
     console.log("Connected to MongoDB");
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
 }).catch((error) => {
     console.error("Error connecting to MongoDB:", error);
 });
@@ -39,12 +36,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/orders', orderViewRoutes);
 app.use('/api/records', recordRoutes);
 
-// Serve static files from React frontend build
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+// Serve static files from the React frontend build
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle React routing, return all other requests to React app
 app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'));
+    res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
 });
 
 // Error handling middleware
@@ -53,3 +50,5 @@ app.use((err, req, res, next) => {
     res.status(500).send({ error: err.message });
 });
 
+// Export the app to be used by Electron's main process
+module.exports = app;
